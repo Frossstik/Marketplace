@@ -1,0 +1,6 @@
+@Marketplace.Payment_HostAddress = http://localhost:5173
+
+GET {{Marketplace.Payment_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

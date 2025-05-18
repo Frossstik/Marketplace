@@ -1,0 +1,12 @@
+{
+  "Version": 1,
+  "Hash": "VD4LNq/hdOTZukT6PbVHMZWyxJaewGqtrsmkGePkJc8=",
+  "Source": "Marketplace.Payment",
+  "BasePath": "_content/Marketplace.Payment",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": [],
+  "Endpoints": []
+}
