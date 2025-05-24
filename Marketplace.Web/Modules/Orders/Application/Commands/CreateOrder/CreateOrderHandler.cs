@@ -1,4 +1,5 @@
 ﻿using Marketplace.Web.Infrastructure;
+using Marketplace.Web.Infrastructure.RabbitMQ;
 using Marketplace.Web.Modules.Orders.Domain;
 using Marketplace.Web.Modules.Orders.Domain.Entities;
 using Marketplace.Web.Modules.Orders.Domain.Events;
@@ -10,11 +11,13 @@ namespace Marketplace.Web.Modules.Orders.Application.Commands.CreateOrder
     {
         private readonly AppDbContext _db;
         private readonly IPublisher _publisher;
+        private readonly IMessageBusPublisher _bus;
 
-        public CreateOrderHandler(AppDbContext db, IPublisher publisher)
+        public CreateOrderHandler(AppDbContext db, IPublisher publisher, IMessageBusPublisher messageBusPublisher)
         {
             _db = db;
             _publisher = publisher;
+            _bus = messageBusPublisher;
         }
 
         public async Task<Guid> Handle(CreateOrderCommand command, CancellationToken token)
@@ -29,7 +32,7 @@ namespace Marketplace.Web.Modules.Orders.Application.Commands.CreateOrder
             await _db.SaveChangesAsync(token);
 
             // Отправка события для платежного сервиса
-            await _publisher.Publish(new OrderCreatedEvent(order.Id, order.TotalPrice), token);
+            await _bus.PublishAsync(new OrderCreatedEvent(order.Id, order.TotalPrice), token);
 
             return order.Id;
         }

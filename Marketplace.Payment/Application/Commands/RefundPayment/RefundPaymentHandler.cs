@@ -21,7 +21,6 @@ namespace Marketplace.Payment.Application.Commands.RefundPayment
         public async Task<bool> Handle(RefundPaymentCommand request, CancellationToken cancellationToken)
         {
             var payment = await _context.Payments.FindAsync(new object[] { request.PaymentId }, cancellationToken);
-
             if (payment == null)
                 throw new ArgumentException("Payment not found");
 
@@ -29,7 +28,6 @@ namespace Marketplace.Payment.Application.Commands.RefundPayment
                 throw new InvalidOperationException("Only completed payments can be refunded");
 
             var processor = _paymentProcessorFactory.GetProcessor(payment.Method);
-
             var success = await processor.ProcessRefundAsync(
                 payment.TransactionId!,
                 request.Amount,
@@ -38,9 +36,8 @@ namespace Marketplace.Payment.Application.Commands.RefundPayment
 
             if (success)
             {
-                // Можно добавить статус Refunded или оставить как Completed
-                // payment.MarkAsRefunded();
-                // await _context.SaveChangesAsync(cancellationToken);
+                payment.MarkAsRefunded();
+                await _context.SaveChangesAsync(cancellationToken);
             }
 
             return success;

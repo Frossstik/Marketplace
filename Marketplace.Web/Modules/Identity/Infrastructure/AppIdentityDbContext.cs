@@ -10,4 +10,6 @@ namespace Marketplace.Web.Modules.Identity.Infrastructure
         public AppIdentityDbContext(DbContextOptions<AppIdentityDbContext> options)
             : base(options) { }
     }
+
+
 }

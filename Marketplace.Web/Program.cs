@@ -4,7 +4,6 @@ using Marketplace.Web.Modules.Carts.Infrastructure;
 using Marketplace.Web.Modules.Carts.Presentation.GraphQL;
 using Marketplace.Web.Modules.Orders.Presentation.GraphQL;
 using Marketplace.Web.Modules.Products.Domain.Entities;
-using Marketplace.Web.Modules.Products.Presentation.GraphQL;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
@@ -24,6 +23,20 @@ using Marketplace.Web.Modules.Categories.Infrastructure;
 using Marketplace.Web.Modules.Categories.Presentation.GraphQL.Queries;
 using Marketplace.Web.Modules.Categories.Presentation.GraphQL.Mutations;
 using Marketplace.Web.Modules.Categories.Domain.Entities;
+using Marketplace.Web.Infrastructure.RabbitMQ;
+using Marketplace.Web.Modules.Products.Application.Commands.CreateProduct;
+using Marketplace.Web.Modules.Products.Application.Commands.DeleteProduct;
+using Marketplace.Web.Modules.Products.Application.Commands.UpdateProduct;
+using Marketplace.Web.Modules.Products.Application.Queries.GetProductById;
+using Marketplace.Web.Modules.Products.Application.Queries.GetProducts;
+using MediatR;
+using Marketplace.Web.Modules.Products.Presentation.GraphQL.Types;
+using Marketplace.Web.Modules.Products.Presentation.GraphQL.Queries;
+using Marketplace.Web.Modules.Products.Presentation.GraphQL.Mutations;
+using Marketplace.Web.Modules.Identity.Presentation.GraphQL.Types;
+using Marketplace.Web.Modules.Categories.Presentation.GraphQL.Types;
+using HotChocolate.Types.Pagination;
+using Microsoft.AspNetCore.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,11 +49,14 @@ builder.Services.AddDbContext<AppIdentityDbContext>(options =>
 //Identity
 builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
 {
-    options.Password.RequireDigit = true;
+    options.Password.RequireDigit = false;
+    options.Password.RequireLowercase = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireNonAlphanumeric = false;
     options.Password.RequiredLength = 8;
     options.User.RequireUniqueEmail = true;
 })
-.AddEntityFrameworkStores<AppIdentityDbContext>() // или твой IdentityDbContext
+.AddEntityFrameworkStores<AppIdentityDbContext>()
 .AddDefaultTokenProviders();
 
 // JWT Authentication
@@ -60,13 +76,37 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+builder.Services.AddAuthentication()
+    .AddGoogle(options =>
+    {
+        options.ClientId = builder.Configuration["Authentication:Google:ClientId"]!;
+        options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]!;
+        options.SaveTokens = true;
+    })
+    .AddYandex(options =>
+    {
+        options.ClientId = builder.Configuration["Authentication:Yandex:ClientId"]!;
+        options.ClientSecret = builder.Configuration["Authentication:Yandex:ClientSecret"]!;
+        options.SaveTokens = true;
+    });
+
 //Identity сервисы
 builder.Services.AddScoped<ITokenService, TokenService>();
+
+
 
 //GraphQL
 builder.Services
     .AddGraphQLServer()
-    .AddAuthorizationCore()
+    .ModifyPagingOptions(options =>
+    {
+        options.DefaultPageSize = 10;
+        options.MaxPageSize = 50;
+        options.IncludeTotalCount = true;
+        options.RequirePagingBoundaries = false;
+    })
+    .AddAuthorization()
+    .AddProjections()
     .AddQueryType(q => q.Name("Query"))
         .AddType<ProductQueries>()
         .AddType<CategoryQueries>()
@@ -80,10 +120,28 @@ builder.Services
         .AddType<CartMutations>()
         .AddType<AuthMutation>()
     .AddType<ProductType>()
+    .AddType<ProductInputType>()
+    .AddType<UpdateProductInputType>()
     .AddType<OrderType>()
+    .AddType<UserType>()
+    .AddType<AuthResponseType>()
+    .AddType<RegisterInputType>()
+    .AddType<RoleEnumType>()
+    .AddType<CategoryType>()
+    .AddType<CategoryInputType>()
     .AddMutationConventions()
     .AddFiltering()
     .AddSorting();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowLocalhost5173", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 
 //MediatR
 builder.Services.AddMediatR(cfg =>
@@ -115,8 +173,27 @@ builder.Services
     .AddScoped<ICategoryRepository, CategoryRepository>()
     .AddScoped<ICategoryService, CategoryService>();
 
+//Product сервисы
+builder.Services
+    .AddScoped<IRequestHandler<CreateProductCommand, Product>, CreateProductHandler>()
+    .AddScoped<IRequestHandler<UpdateProductCommand, Product>, UpdateProductHandler>()
+    .AddScoped<IRequestHandler<DeleteProductCommand, bool>, DeleteProductHandler>()
+    .AddScoped<IRequestHandler<GetProductsQuery, List<Product>>, GetProductsHandler>()
+    .AddScoped<IRequestHandler<GetProductByIdQuery, Product?>, GetProductByIdHandler>();
+
+//RabbitMQ
+builder.Services.AddSingleton<IMessageBusPublisher>(provider =>
+{
+    var config = provider.GetRequiredService<IConfiguration>();
+    var connectionString = config.GetConnectionString("RabbitMQ") ?? "amqp://guest:guest@localhost:5672";
+    return RabbitMqPublisher.CreateAsync(connectionString)
+        .GetAwaiter()
+        .GetResult();
+});
+
 var app = builder.Build();
 
+//Роли
 using (var scope = app.Services.CreateScope())
 {
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
@@ -130,8 +207,21 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+app.UseCors("AllowLocalhost5173");
+
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapGet("/signin-google", () => Results.Challenge(
+    new AuthenticationProperties { RedirectUri = "/graphql" },
+    new[] { "Google" }
+));
+
+app.MapGet("/signin-yandex", () => Results.Challenge(
+    new AuthenticationProperties { RedirectUri = "/graphql" },
+    new[] { "Yandex" }
+));
+
 app.MapGraphQL();
 app.UseHttpsRedirection();
 app.Run();

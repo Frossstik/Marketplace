@@ -51,17 +51,29 @@
         "net9.0": {
           "targetAlias": "net9.0",
           "dependencies": {
+            "AspNet.Security.OAuth.Yandex": {
+              "target": "Package",
+              "version": "[9.4.0, )"
+            },
             "HotChocolate.AspNetCore": {
               "target": "Package",
               "version": "[15.1.3, )"
             },
+            "HotChocolate.AspNetCore.Authorization": {
+              "target": "Package",
+              "version": "[15.1.5, )"
+            },
             "HotChocolate.Data": {
               "target": "Package",
-              "version": "[15.1.3, )"
+              "version": "[15.1.5, )"
             },
             "MediatR": {
               "target": "Package",
               "version": "[12.5.0, )"
+            },
+            "Microsoft.AspNetCore.Authentication.Google": {
+              "target": "Package",
+              "version": "[9.0.5, )"
             },
             "Microsoft.AspNetCore.Authentication.JwtBearer": {
               "target": "Package",
@@ -98,6 +110,10 @@
             "Npgsql.EntityFrameworkCore.PostgreSQL": {
               "target": "Package",
               "version": "[9.0.4, )"
+            },
+            "RabbitMQ.Client": {
+              "target": "Package",
+              "version": "[7.1.2, )"
             },
             "StackExchange.Redis": {
               "target": "Package",

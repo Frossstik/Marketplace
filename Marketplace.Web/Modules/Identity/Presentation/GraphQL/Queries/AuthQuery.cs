@@ -28,5 +28,16 @@ namespace Marketplace.Web.Modules.Identity.Presentation.GraphQL.Queries
             var user = contextAccessor.HttpContext?.User;
             return await userManager.GetUserAsync(user!);
         }
+
+        [GraphQLDescription("Получить URL для аутентификации через провайдера")]
+        public string GetExternalLoginUrl(string provider)
+        {
+            return provider.ToLower() switch
+            {
+                "google" => "/signin-google",
+                "yandex" => "/signin-yandex",
+                _ => throw new ArgumentException("Неизвестный провайдер")
+            };
+        }
     }
 }

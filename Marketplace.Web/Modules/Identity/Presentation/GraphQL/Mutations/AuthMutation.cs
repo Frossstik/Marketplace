@@ -1,5 +1,6 @@
 ﻿using HotChocolate.Authorization;
 using Marketplace.Web.Modules.Identity.Application.Commands.AssignRole;
+using Marketplace.Web.Modules.Identity.Application.Commands.ExternalLogin;
 using Marketplace.Web.Modules.Identity.Application.Commands.Register;
 using Marketplace.Web.Modules.Identity.Application.DTO;
 using Marketplace.Web.Modules.Identity.Domain.Enums;
@@ -29,6 +30,22 @@ namespace Marketplace.Web.Modules.Identity.Presentation.GraphQL.Mutations
         {
             await mediator.Send(input, token);
             return true;
+        }
+
+        [GraphQLDescription("Вход через внешнего провайдера (Google/Yandex)")]
+        public async Task<AuthResponse> ExternalLogin(
+            [Service] IMediator mediator,
+            string email,
+            string firstName,
+            string lastName,
+            string provider,
+            string? companyName = null,
+            CancellationToken token = default)
+        {
+            return await mediator.Send(
+                new ExternalLoginCommand(email, firstName, lastName, companyName, provider),
+                token
+            );
         }
     }
 }

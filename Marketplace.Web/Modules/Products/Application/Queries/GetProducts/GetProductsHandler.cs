@@ -5,19 +5,19 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Marketplace.Web.Modules.Products.Application.Queries.GetProducts
 {
-    public class GetProductsHandler : IRequestHandler<GetProductsQuery, IEnumerable<Product>>
+    public class GetProductsHandler : IRequestHandler<GetProductsQuery, List<Product>>
     {
-        private readonly AppDbContext _dbContext;
+        private readonly AppDbContext _context;
 
-        public GetProductsHandler(AppDbContext dbContext)
+        public GetProductsHandler(AppDbContext context)
         {
-            _dbContext = dbContext;
+            _context = context;
         }
 
-        public async Task<IEnumerable<Product>> Handle(GetProductsQuery request, CancellationToken cancellationToken)
+        public async Task<List<Product>> Handle(GetProductsQuery request, CancellationToken cancellationToken)
         {
-            return await _dbContext.Products
-                .AsNoTracking()
+            return await _context.Products
+                .Include(p => p.Category)
                 .ToListAsync(cancellationToken);
         }
     }

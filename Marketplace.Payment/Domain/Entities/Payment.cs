@@ -47,5 +47,14 @@ namespace Marketplace.Payment.Domain.Entities
             FailureReason = reason ?? throw new ArgumentNullException(nameof(reason));
             ProcessedAt = DateTime.UtcNow;
         }
+
+        public void MarkAsRefunded()
+        {
+            if (Status != PaymentStatus.Completed)
+                throw new InvalidOperationException("Only completed payments can be refunded");
+
+            Status = PaymentStatus.Refunded;
+            ProcessedAt = DateTime.UtcNow;
+        }
     }
 }
