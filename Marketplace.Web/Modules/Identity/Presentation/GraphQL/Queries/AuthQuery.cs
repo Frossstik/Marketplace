@@ -4,6 +4,8 @@ using MediatR;
 using Marketplace.Web.Modules.Identity.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using HotChocolate.Authorization;
+using Marketplace.Web.Modules.Identity.Application.Queries.GetUserById;
+using Marketplace.Web.Modules.Identity.Application.Queries.GetUsers;
 
 namespace Marketplace.Web.Modules.Identity.Presentation.GraphQL.Queries
 {
@@ -38,6 +40,24 @@ namespace Marketplace.Web.Modules.Identity.Presentation.GraphQL.Queries
                 "yandex" => "/signin-yandex",
                 _ => throw new ArgumentException("Неизвестный провайдер")
             };
+        }
+
+        [Authorize(Roles = new[] { "Admin" })]
+        public async Task<User?> GetUserById(
+            [Service] IMediator mediator,
+            Guid userId,
+            CancellationToken token)
+        {
+            return await mediator.Send(new GetUserByIdQuery(userId), token);
+        }
+
+        [UseFiltering]
+        [UseSorting]
+        public async Task<IEnumerable<UserDto>> GetUsers(
+            [Service] IMediator mediator,
+            CancellationToken token)
+        {
+            return await mediator.Send(new GetUsersQuery(), token);
         }
     }
 }

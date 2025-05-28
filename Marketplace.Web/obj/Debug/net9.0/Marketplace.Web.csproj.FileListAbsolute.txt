@@ -254,3 +254,5 @@ C:\Users\Win10Pro\Desktop\Диплом\Marketplace\Marketplace.Web\obj\Debug\net
 C:\Users\Win10Pro\Desktop\Диплом\Marketplace\Marketplace.Web\obj\Debug\net9.0\compressed\yfc7ypekbg-mlv21k5csn.gz
 C:\Users\Win10Pro\Desktop\Диплом\Marketplace\Marketplace.Web\bin\Debug\net9.0\RabbitMQ.Client.dll
 C:\Users\Win10Pro\Desktop\Диплом\Marketplace\Marketplace.Web\bin\Debug\net9.0\HotChocolate.AspNetCore.Authorization.dll
+C:\Users\Win10Pro\Desktop\Диплом\Marketplace\Marketplace.Web\bin\Debug\net9.0\AspNet.Security.OAuth.Yandex.dll
+C:\Users\Win10Pro\Desktop\Диплом\Marketplace\Marketplace.Web\bin\Debug\net9.0\Microsoft.AspNetCore.Authentication.Google.dll

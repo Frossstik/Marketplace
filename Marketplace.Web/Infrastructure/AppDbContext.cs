@@ -1,4 +1,5 @@
 ﻿using Marketplace.Web.Modules.Categories.Domain.Entities;
+using Marketplace.Web.Modules.Identity.Domain.Entities;
 using Marketplace.Web.Modules.Orders.Domain.Entities;
 using Marketplace.Web.Modules.Products.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -12,14 +13,15 @@ namespace Marketplace.Web.Infrastructure
         public DbSet<Product> Products { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<Category> Categories { get; set; }
-
         public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options) { }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
-
+            modelBuilder.Entity<Category>()
+                .HasIndex(c => c.Name)
+                .IsUnique();
         }
     }
 }

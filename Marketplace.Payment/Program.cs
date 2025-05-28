@@ -11,9 +11,22 @@ using Marketplace.Payment.Infrastructure.RabbitMQ;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container
 builder.Services.AddDbContext<PaymentDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("PaymentDatabase")));
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowLocalhost5173", builder =>
+    {
+        builder.WithOrigins("http://localhost:5173")
+               .AllowAnyHeader()
+               .AllowAnyMethod()
+               .AllowCredentials();
+    });
+});
+
+builder.Services.AddHttpClient<BankCardService>()
+    .ConfigureHttpClient(client => client.Timeout = TimeSpan.FromSeconds(60));
 
 // MediatR
 builder.Services.AddMediatR(cfg =>
@@ -24,7 +37,8 @@ builder.Services.AddScoped<BankCardService>();
 builder.Services.AddScoped<YooMoneyService>();
 builder.Services.AddScoped<IPaymentProcessorFactory, PaymentProcessorFactory>();
 
-//var rabbitMqConfig = builder.Configuration.GetConnectionString("RabbitMQ");
+builder.Services.Configure<YooMoneySettings>(builder.Configuration.GetSection("YooMoney"));
+builder.Services.AddHttpClient<BankCardService>();
 
 builder.Services.AddSingleton<IMessageBusPublisher>(provider =>
 {
@@ -52,6 +66,7 @@ builder.Services
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
+app.UseCors("AllowLocalhost5173");
 app.MapGraphQL();
 
 // Apply migrations

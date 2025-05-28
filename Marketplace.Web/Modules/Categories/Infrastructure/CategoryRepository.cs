@@ -1,7 +1,6 @@
 ﻿using Marketplace.Web.Infrastructure;
 using Marketplace.Web.Modules.Categories.Application.Interfaces;
 using Marketplace.Web.Modules.Categories.Domain.Entities;
-using Marketplace.Web.Modules.Categories.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace Marketplace.Web.Modules.Categories.Infrastructure
@@ -30,11 +29,10 @@ namespace Marketplace.Web.Modules.Categories.Infrastructure
         public async Task<Category?> GetByNameAsync(string name)
             => await _context.Categories.FirstOrDefaultAsync(c => c.Name == name);
 
-        public async Task<IEnumerable<Category>> GetAllAsync(CategoryStatusEnum? status)
-            => status.HasValue
-                ? await _context.Categories.Where(c => c.Status == status).ToListAsync()
-                : await _context.Categories.ToListAsync();
-
+        public async Task<IEnumerable<Category>> GetAllAsync()
+        {
+            return await _context.Categories.ToListAsync();
+        }
         public async Task DeleteAsync(Category category)
         {
             _context.Categories.Remove(category);

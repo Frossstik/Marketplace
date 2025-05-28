@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Marketplace.Web.Infrastructure;
 using Marketplace.Web.Modules.Carts.Domain.Entities;
 using Marketplace.Web.Modules.Carts.Infrastructure;
@@ -37,16 +38,18 @@ using Marketplace.Web.Modules.Identity.Presentation.GraphQL.Types;
 using Marketplace.Web.Modules.Categories.Presentation.GraphQL.Types;
 using HotChocolate.Types.Pagination;
 using Microsoft.AspNetCore.Authentication;
+using Marketplace.Web.Infrastructure.RabbitMQ.Consumers;
+using Marketplace.Web.Modules.Orders.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-//DB
+// DB
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddDbContext<AppIdentityDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("IdentityDb")));
 
-//Identity
+// Identity
 builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
 {
     options.Password.RequireDigit = false;
@@ -60,42 +63,70 @@ builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
 .AddDefaultTokenProviders();
 
 // JWT Authentication
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.TokenValidationParameters = new()
+        ValidateIssuer = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidateAudience = true,
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])),
+        RoleClaimType = ClaimTypes.Role,
+        NameClaimType = ClaimTypes.NameIdentifier
+    };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnAuthenticationFailed = context =>
         {
-            ValidateIssuer = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidateAudience = true,
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            ValidateLifetime = true,
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])),
-            ValidateIssuerSigningKey = true
-        };
-    });
+            Console.WriteLine($"Authentication failed: {context.Exception}");
+            return Task.CompletedTask;
+        },
+        OnTokenValidated = context =>
+        {
+            Console.WriteLine("User authenticated. Claims:");
+            foreach (var claim in context.Principal.Claims)
+            {
+                Console.WriteLine($"{claim.Type}: {claim.Value}");
+            }
+            return Task.CompletedTask;
+        }
+    };
+})
+.AddGoogle(options =>
+{
+    options.ClientId = builder.Configuration["Authentication:Google:ClientId"]!;
+    options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]!;
+    options.SaveTokens = true;
+})
+.AddYandex(options =>
+{
+    options.ClientId = builder.Configuration["Authentication:Yandex:ClientId"]!;
+    options.ClientSecret = builder.Configuration["Authentication:Yandex:ClientSecret"]!;
+    options.SaveTokens = true;
+});
 
-builder.Services.AddAuthentication()
-    .AddGoogle(options =>
-    {
-        options.ClientId = builder.Configuration["Authentication:Google:ClientId"]!;
-        options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]!;
-        options.SaveTokens = true;
-    })
-    .AddYandex(options =>
-    {
-        options.ClientId = builder.Configuration["Authentication:Yandex:ClientId"]!;
-        options.ClientSecret = builder.Configuration["Authentication:Yandex:ClientSecret"]!;
-        options.SaveTokens = true;
-    });
+// Authorization
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+    options.AddPolicy("SellerOnly", policy => policy.RequireRole("Seller"));
+    options.AddPolicy("AdminOrSeller", policy => policy.RequireRole("Admin", "Seller"));
+});
 
-//Identity сервисы
+// Identity services
 builder.Services.AddScoped<ITokenService, TokenService>();
 
-
-
-//GraphQL
+// GraphQL
 builder.Services
     .AddGraphQLServer()
     .ModifyPagingOptions(options =>
@@ -124,6 +155,7 @@ builder.Services
     .AddType<UpdateProductInputType>()
     .AddType<OrderType>()
     .AddType<UserType>()
+    .AddType<UserDtoType>()
     .AddType<AuthResponseType>()
     .AddType<RegisterInputType>()
     .AddType<RoleEnumType>()
@@ -133,6 +165,7 @@ builder.Services
     .AddFiltering()
     .AddSorting();
 
+// CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowLocalhost5173", policy =>
@@ -143,7 +176,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-//MediatR
+// MediatR
 builder.Services.AddMediatR(cfg =>
 {
     cfg.RegisterServicesFromAssemblies(
@@ -156,32 +189,26 @@ builder.Services.AddMediatR(cfg =>
     );
 });
 
-//Redis
+// Redis
 builder.Services.AddSingleton<IConnectionMultiplexer>(provider =>
     ConnectionMultiplexer.Connect(builder.Configuration.GetSection("Redis")["ConnectionString"]));
 builder.Services.AddScoped<RedisCartRepository>();
 
-// Авторизация по ролям
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
-    options.AddPolicy("SellerOnly", policy => policy.RequireRole("Seller"));
-});
-
-//Category сервисы
+// Services
 builder.Services
     .AddScoped<ICategoryRepository, CategoryRepository>()
-    .AddScoped<ICategoryService, CategoryService>();
-
-//Product сервисы
-builder.Services
+    .AddScoped<ICategoryService, CategoryService>()
     .AddScoped<IRequestHandler<CreateProductCommand, Product>, CreateProductHandler>()
     .AddScoped<IRequestHandler<UpdateProductCommand, Product>, UpdateProductHandler>()
     .AddScoped<IRequestHandler<DeleteProductCommand, bool>, DeleteProductHandler>()
     .AddScoped<IRequestHandler<GetProductsQuery, List<Product>>, GetProductsHandler>()
     .AddScoped<IRequestHandler<GetProductByIdQuery, Product?>, GetProductByIdHandler>();
 
-//RabbitMQ
+builder.Services.AddHostedService<UnpaidOrdersCleanupService>();
+builder.Services.AddHostedService<EmptyCategoriesCleanupService>();
+
+
+// RabbitMQ
 builder.Services.AddSingleton<IMessageBusPublisher>(provider =>
 {
     var config = provider.GetRequiredService<IConfiguration>();
@@ -190,10 +217,11 @@ builder.Services.AddSingleton<IMessageBusPublisher>(provider =>
         .GetAwaiter()
         .GetResult();
 });
+builder.Services.AddHostedService<PaymentCompletedConsumer>();
 
 var app = builder.Build();
 
-//Роли
+// Роли
 using (var scope = app.Services.CreateScope())
 {
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
@@ -208,7 +236,6 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.UseCors("AllowLocalhost5173");
-
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -221,6 +248,8 @@ app.MapGet("/signin-yandex", () => Results.Challenge(
     new AuthenticationProperties { RedirectUri = "/graphql" },
     new[] { "Yandex" }
 ));
+
+
 
 app.MapGraphQL();
 app.UseHttpsRedirection();

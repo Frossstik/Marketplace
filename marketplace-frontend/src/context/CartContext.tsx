@@ -9,8 +9,11 @@ type CartItem = {
 
 type CartContextType = {
   cartItems: CartItem[];
+  cartCount: number;
   addToCart: (item: CartItem) => void;
   removeFromCart: (productId: string) => void;
+  clearCart: () => void;
+  getTotalPrice: () => number;
 };
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -36,8 +39,15 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     setCartItems(prev => prev.filter(i => i.productId !== productId));
   };
 
+  const clearCart = () => setCartItems([]);
+
+  const cartCount = cartItems.reduce((sum, i) => sum + i.quantity, 0);
+
+  const getTotalPrice = () =>
+    cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
+
   return (
-    <CartContext.Provider value={{ cartItems, addToCart, removeFromCart }}>
+    <CartContext.Provider value={{ cartItems, cartCount, addToCart, removeFromCart, clearCart, getTotalPrice }}>
       {children}
     </CartContext.Provider>
   );

@@ -23,7 +23,6 @@ namespace Marketplace.Web.Modules.Categories.Application.Commands.DeleteEmptyCat
             var category = await _categoryRepository.GetByIdAsync(command.CategoryId);
             if (category == null) return false;
 
-            // Проверяем, есть ли товары в категории
             bool hasProducts = await _dbContext.Products
                 .AnyAsync(p => p.CategoryId == command.CategoryId, token);
 

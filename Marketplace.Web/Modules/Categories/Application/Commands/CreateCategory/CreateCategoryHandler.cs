@@ -1,6 +1,5 @@
 ﻿using Marketplace.Web.Modules.Categories.Application.Interfaces;
 using Marketplace.Web.Modules.Categories.Domain.Entities;
-using Marketplace.Web.Modules.Categories.Domain.Enums;
 using MediatR;
 
 namespace Marketplace.Web.Modules.Categories.Application.Commands.CreateCategory
@@ -14,13 +13,18 @@ namespace Marketplace.Web.Modules.Categories.Application.Commands.CreateCategory
 
         public async Task<Guid> Handle(CreateCategoryCommand command, CancellationToken token)
         {
+            var existingCategory = await _repository.GetByNameAsync(command.Name);
+
+            if (existingCategory != null)
+            {
+                return existingCategory.Id;
+            }
+
             var category = new Category
             {
                 Name = command.Name,
                 CreatorSellerId = command.CreatorSellerId,
-                Status = command.CreatorSellerId.HasValue
-                    ? CategoryStatusEnum.Pending
-                    : CategoryStatusEnum.Active
+                CreatedAt = DateTime.UtcNow
             };
 
             await _repository.AddAsync(category);

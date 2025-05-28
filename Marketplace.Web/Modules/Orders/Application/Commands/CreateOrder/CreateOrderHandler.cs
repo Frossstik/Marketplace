@@ -31,7 +31,6 @@ namespace Marketplace.Web.Modules.Orders.Application.Commands.CreateOrder
             await _db.Orders.AddAsync(order, token);
             await _db.SaveChangesAsync(token);
 
-            // Отправка события для платежного сервиса
             await _bus.PublishAsync(new OrderCreatedEvent(order.Id, order.TotalPrice), token);
 
             return order.Id;

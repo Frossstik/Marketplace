@@ -24,21 +24,24 @@ namespace Marketplace.Web.Modules.Identity.Application.Queries.Login
             _tokenService = tokenService;
         }
 
-        public async Task<AuthResponse> Handle(LoginQuery query, CancellationToken token)
+        public async Task<AuthResponse> Handle(LoginQuery request, CancellationToken cancellationToken)
         {
-            var user = await _userManager.FindByEmailAsync(query.Email);
+            var user = await _userManager.FindByEmailAsync(request.Email);
             if (user == null)
                 throw new ArgumentException("Invalid credentials");
 
-            var result = await _signInManager.CheckPasswordSignInAsync(user, query.Password, false);
+            var result = await _signInManager.CheckPasswordSignInAsync(user, request.Password, false);
             if (!result.Succeeded)
                 throw new ArgumentException("Invalid credentials");
 
+            var token = await _tokenService.GenerateToken(user);
+            Console.WriteLine($"Generated token for {request.Email}: {token}");
+
             var roles = await _userManager.GetRolesAsync(user);
-            var roleEnum = Enum.Parse<RoleEnum>(roles.First()); // Конвертируем строку в enum
+            var roleEnum = Enum.Parse<RoleEnum>(roles.First());
 
             return new AuthResponse(
-                await _tokenService.GenerateToken(user),
+                token,
                 user.Id,
                 user.Email,
                 roleEnum

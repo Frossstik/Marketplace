@@ -25,15 +25,19 @@ namespace Marketplace.Web.Modules.Identity.Infrastructure
         public async Task<string> GenerateToken(User user)
         {
             var roles = await _userManager.GetRolesAsync(user);
-            var roleEnum = Enum.Parse<RoleEnum>(roles.First()); // Получаем enum из роли
+            var roleEnum = Enum.Parse<RoleEnum>(roles.First());
 
             var claims = new List<Claim>
-        {
-            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new(JwtRegisteredClaimNames.Email, user.Email),
-            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new(ClaimTypes.Role, roleEnum.ToString()) // Сохраняем как строку
-        };
+            {
+                new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+                new(JwtRegisteredClaimNames.Email, user.Email),
+                new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new(ClaimTypes.Role, roles.First()),
+                new(ClaimTypes.Role, roleEnum.ToString()),
+                new Claim(ClaimTypes.Role, "Seller"),
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
+            };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

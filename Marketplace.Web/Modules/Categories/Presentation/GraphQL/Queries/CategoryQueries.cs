@@ -1,7 +1,6 @@
 ﻿using Marketplace.Web.Modules.Categories.Application.Queries.GetCategories;
 using Marketplace.Web.Modules.Categories.Application.Queries.GetCategoryById;
 using Marketplace.Web.Modules.Categories.Domain.Entities;
-using Marketplace.Web.Modules.Categories.Domain.Enums;
 using MediatR;
 
 namespace Marketplace.Web.Modules.Categories.Presentation.GraphQL.Queries
@@ -10,11 +9,10 @@ namespace Marketplace.Web.Modules.Categories.Presentation.GraphQL.Queries
     public class CategoryQueries
     {
         public async Task<IEnumerable<Category>> GetCategories(
-            [Service] IMediator mediator,
-            CategoryStatusEnum? status = null,
-            CancellationToken token = default)
+        [Service] IMediator mediator,
+        CancellationToken token = default)
         {
-            return await mediator.Send(new GetCategoriesQuery(status), token);
+            return await mediator.Send(new GetCategoriesQuery(), token);
         }
 
         public async Task<Category?> GetCategoryById(

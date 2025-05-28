@@ -1,54 +1,80 @@
+import { useEffect, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
-import { useNavigate } from 'react-router-dom';
+import { useMutation } from '@apollo/client';
+import { jwtDecode } from 'jwt-decode';
+import { CREATE_ORDER } from '../api/graphql/mutations/ordersMutations';
 
 const Checkout = () => {
-  const { cartItems } = useCart();
+  const { state } = useLocation();
   const navigate = useNavigate();
+  const { cartItems, getTotalPrice, clearCart } = useCart();
+  const [createOrder] = useMutation(CREATE_ORDER);
 
-  const total = cartItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
+  const calledRef = useRef(false); // 👈 флаг для защиты
 
-  const handleNext = () => {
-    navigate('/payment');
-  };
+  useEffect(() => {
+    if (calledRef.current) return;
+    calledRef.current = true;
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
+    const decoded: any = jwtDecode(token);
+    const userId = decoded.sub;
+
+    const items = cartItems.map(item => ({
+      productId: item.productId,
+      productName: item.productName,
+      unitPrice: item.price,
+      quantity: item.quantity,
+    }));
+
+    if (!items.length) {
+      alert("Корзина пуста, заказ не будет создан.");
+      navigate('/cart');
+      return;
+    }
+
+    console.log('CreateOrder payload:', {
+      input: {
+        userId,
+        items,
+      }
+    });
+
+    createOrder({
+      variables: {
+        input: {
+          userId,
+          items,
+        },
+      },
+    })
+      .then(({ data }) => {
+        clearCart();
+        navigate('/payment', {
+          state: {
+            orderId: data.createOrder.uuid,
+            amount: getTotalPrice(),
+            userId,
+          },
+        });
+      })
+      .catch(error => {
+        console.error('❌ Ошибка при создании заказа:', error);
+        alert('Не удалось оформить заказ. Попробуйте позже.');
+        navigate('/cart');
+      });
+  }, [cartItems, clearCart, createOrder, getTotalPrice, navigate]);
 
   return (
-    <div className="max-w-2xl mx-auto py-12">
-      <h2 className="text-3xl font-bold text-center mb-6">Оформление заказа</h2>
-      {cartItems.length === 0 ? (
-        <p className="text-center">Корзина пуста.</p>
-      ) : (
-        <>
-          <ul className="space-y-4">
-            {cartItems.map(item => (
-              <li key={item.productId} className="border p-4 rounded shadow">
-                <div className="flex justify-between">
-                  <div>
-                    <h4 className="font-semibold">{item.productName}</h4>
-                    <p className="text-sm text-gray-500">
-                      {item.price} ₽ × {item.quantity}
-                    </p>
-                  </div>
-                  <div className="font-bold">
-                    {item.price * item.quantity} ₽
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-          <div className="text-right mt-6 text-lg font-bold">
-            Итого: {total} ₽
-          </div>
-          <button
-            onClick={handleNext}
-            className="mt-6 w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
-          >
-            Перейти к оплате
-          </button>
-        </>
-      )}
+    <div className="max-w-2xl mx-auto py-12 text-center">
+      <h2 className="text-2xl font-bold">Оформляем заказ...</h2>
+      <p className="text-gray-500 mt-4">Пожалуйста, подождите...</p>
     </div>
   );
 };

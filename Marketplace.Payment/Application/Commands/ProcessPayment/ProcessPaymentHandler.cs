@@ -1,4 +1,4 @@
-﻿using Marketplace.Payment.Application.Events;
+﻿using Marketplace.Payment.Domain.Events;
 using Marketplace.Payment.Infrastructure;
 using Marketplace.Payment.Infrastructure.Interfaces;
 using MediatR;
@@ -9,13 +9,16 @@ namespace Marketplace.Payment.Application.Commands.ProcessPayment
     {
         private readonly PaymentDbContext _context;
         private readonly IPaymentProcessorFactory _paymentProcessorFactory;
+        private readonly IMessageBusPublisher _messageBus;
 
         public ProcessPaymentHandler(
             PaymentDbContext context,
-            IPaymentProcessorFactory paymentProcessorFactory)
+            IPaymentProcessorFactory paymentProcessorFactory,
+            IMessageBusPublisher messageBus)
         {
             _context = context;
             _paymentProcessorFactory = paymentProcessorFactory;
+            _messageBus = messageBus;
         }
 
         public async Task<Domain.Entities.Payment> Handle(ProcessPaymentCommand request, CancellationToken cancellationToken)
@@ -42,6 +45,16 @@ namespace Marketplace.Payment.Application.Commands.ProcessPayment
 
                 payment.MarkAsCompleted(transactionId);
                 await _context.SaveChangesAsync(cancellationToken);
+
+                var @event = new PaymentCompletedEvent(
+                    payment.OrderId,
+                    payment.Id,
+                    payment.TransactionId!,
+                    payment.Amount,
+                    payment.Currency
+                );
+
+                await _messageBus.PublishAsync(@event, cancellationToken);
 
                 return payment;
             }

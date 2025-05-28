@@ -22,7 +22,6 @@ namespace Marketplace.Web.Modules.Orders.Domain.Configurations
             {
                 item.ToTable("order_items");
 
-                // Composite key or surrogate key for owned type
                 item.Property<Guid>("Id");
                 item.HasKey("Id");
 

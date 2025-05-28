@@ -3,7 +3,6 @@
     public enum PaymentMethod
     {
         Card,
-        YooMoney,
-        SBP
+        YooMoney
     }
 }

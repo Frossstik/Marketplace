@@ -1,11 +1,13 @@
 ﻿using HotChocolate.Authorization;
 using Marketplace.Web.Modules.Identity.Application.Commands.AssignRole;
+using Marketplace.Web.Modules.Identity.Application.Commands.DeleteUser;
 using Marketplace.Web.Modules.Identity.Application.Commands.ExternalLogin;
 using Marketplace.Web.Modules.Identity.Application.Commands.Register;
 using Marketplace.Web.Modules.Identity.Application.DTO;
+using Marketplace.Web.Modules.Identity.Domain.Entities;
 using Marketplace.Web.Modules.Identity.Domain.Enums;
 using MediatR;
-//using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 
 namespace Marketplace.Web.Modules.Identity.Presentation.GraphQL.Mutations
 {
@@ -46,6 +48,26 @@ namespace Marketplace.Web.Modules.Identity.Presentation.GraphQL.Mutations
                 new ExternalLoginCommand(email, firstName, lastName, companyName, provider),
                 token
             );
+        }
+
+        [Authorize]
+        public async Task<bool> DeleteUser(
+            [Service] IMediator mediator,
+            [Service] IHttpContextAccessor httpContextAccessor,
+            [Service] UserManager<User> userManager,
+            Guid? userId = null,
+            CancellationToken token = default)
+        {
+            var currentUser = httpContextAccessor.HttpContext?.User;
+            var currentUserId = (await userManager.GetUserAsync(currentUser!))?.Id;
+
+            var userIdToDelete = userId ?? currentUserId;
+            if (!userIdToDelete.HasValue)
+                throw new ArgumentException("User not found");
+
+            return await mediator.Send(
+                new DeleteUserCommand(userIdToDelete.Value, currentUserId!.Value),
+                token);
         }
     }
 }

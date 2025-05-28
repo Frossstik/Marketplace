@@ -15,7 +15,7 @@ namespace Marketplace.Web.Modules.Categories.Application.Queries.GetCategories
             GetCategoriesQuery query,
             CancellationToken token)
         {
-            return await _repository.GetAllAsync(query.Status);
+            return await _repository.GetAllAsync();
         }
     }
 }

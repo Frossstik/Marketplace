@@ -18,11 +18,9 @@ namespace Marketplace.Web.Modules.Identity.Application.Commands.AssignRole
             if (user == null)
                 throw new ArgumentException("User not found");
 
-            // Удаляем все текущие роли
             var currentRoles = await _userManager.GetRolesAsync(user);
             await _userManager.RemoveFromRolesAsync(user, currentRoles);
 
-            // Добавляем новую роль (используем enum)
             await _userManager.AddToRoleAsync(user, command.Role.ToString());
 
             return Unit.Value;

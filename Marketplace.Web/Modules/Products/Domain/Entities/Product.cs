@@ -1,4 +1,5 @@
 ﻿using Marketplace.Web.Modules.Categories.Domain.Entities;
+using Marketplace.Web.Modules.Identity.Domain.Entities;
 
 namespace Marketplace.Web.Modules.Products.Domain.Entities
 {
@@ -13,5 +14,8 @@ namespace Marketplace.Web.Modules.Products.Domain.Entities
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public Guid CategoryId { get; set; }
         public Category? Category { get; set; }
+        public Guid CreatorId { get; set; }
+        public string? CreatorName { get; set; }
+        public string? CreatorsCompanyName { get; set; } 
     }
 }

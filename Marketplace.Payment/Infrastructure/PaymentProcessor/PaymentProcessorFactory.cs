@@ -18,7 +18,6 @@ namespace Marketplace.Payment.Infrastructure.PaymentProcessor
             {
                 PaymentMethod.Card => _serviceProvider.GetRequiredService<BankCardService>(),
                 PaymentMethod.YooMoney => _serviceProvider.GetRequiredService<YooMoneyService>(),
-                PaymentMethod.SBP => throw new NotImplementedException("SBP processor not implemented yet"),
                 _ => throw new ArgumentOutOfRangeException(nameof(method), method, null)
             };
         }

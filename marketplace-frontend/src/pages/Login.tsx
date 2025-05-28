@@ -1,7 +1,36 @@
 import { useState } from 'react';
+import { gql, useLazyQuery } from '@apollo/client';
+import { useNavigate } from 'react-router-dom';
+
+const LOGIN_QUERY = gql`
+  query Login($email: String!, $password: String!) {
+    login(input: {
+      email: $email,
+      password: $password
+    }) {
+      token
+    }
+  }
+`;
 
 const Login = () => {
   const [form, setForm] = useState({ email: '', password: '' });
+  const navigate = useNavigate();
+
+  const [login, { loading, error, data }] = useLazyQuery(LOGIN_QUERY, {
+    fetchPolicy: 'no-cache',
+    onCompleted: (data) => {
+      const token = data?.login?.token;
+      if (token) {
+        localStorage.setItem('token', token);
+        alert('Вход выполнен!');
+        navigate('/profile');
+      }
+    },
+    onError: () => {
+      alert('Неверный логин или пароль');
+    },
+  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -9,47 +38,17 @@ const Login = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Login:', form);
-    alert('Вход выполнен (мок)');
-  };
-
-  const handleOAuthClick = (provider: 'google' | 'yandex') => {
-    console.log(`OAuth via ${provider}`);
-    alert(`OAuth через ${provider} (заглушка)`);
-    // можно заменить на: window.location.href = `/auth/${provider}`;
+    login({
+      variables: {
+        email: form.email,
+        password: form.password,
+      },
+    });
   };
 
   return (
     <div className="max-w-md mx-auto py-12">
-      <h2 className="text-3xl font-bold mb-6 text-center">Вход</h2>
-
-      {/* OAuth buttons */}
-      <div className="space-y-3 mb-8">
-        <button
-          onClick={() => handleOAuthClick('google')}
-          className="w-full flex items-center justify-center gap-2 bg-white border border-gray-300 py-2 rounded hover:bg-gray-50"
-        >
-          <img
-            src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg"
-            alt="Google"
-            className="w-5 h-5"
-          />
-          <span>Войти через Google</span>
-        </button>
-        <button
-          onClick={() => handleOAuthClick('yandex')}
-          className="w-full flex items-center justify-center gap-2 bg-white border border-gray-300 py-2 rounded hover:bg-gray-50"
-        >
-          <img
-            src="https://upload.wikimedia.org/wikipedia/commons/0/0b/Yandex_icon.svg"
-            alt="Yandex"
-            className="w-5 h-5"
-          />
-          <span>Войти через Yandex</span>
-        </button>
-      </div>
-
-      {/* Email/password login */}
+      <h2 className="text-3xl font-bold text-center mb-6">Вход</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
           name="email"
@@ -57,7 +56,7 @@ const Login = () => {
           placeholder="Email"
           value={form.email}
           onChange={handleChange}
-          className="w-full border border-gray-300 rounded px-4 py-2"
+          className="w-full border px-4 py-2 rounded"
           required
         />
         <input
@@ -66,16 +65,23 @@ const Login = () => {
           placeholder="Пароль"
           value={form.password}
           onChange={handleChange}
-          className="w-full border border-gray-300 rounded px-4 py-2"
+          className="w-full border px-4 py-2 rounded"
           required
         />
         <button
           type="submit"
+          disabled={loading}
           className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
         >
-          Войти
+          {loading ? 'Вход...' : 'Войти'}
         </button>
       </form>
+
+      {error && (
+        <p className="mt-4 text-red-500 text-sm text-center">
+          {error.message}
+        </p>
+      )}
     </div>
   );
 };

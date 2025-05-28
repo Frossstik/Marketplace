@@ -11,5 +11,12 @@ namespace Marketplace.Web.Modules.Orders.Domain.Entities
         public OrderStatus Status { get; set; } = OrderStatus.PendingPayment;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public void Cancel() => Status = OrderStatus.Cancelled;
+        public DateTime? PaidAt { get; set; }
+
+        public void MarkAsPaid()
+        {
+            Status = OrderStatus.Paid;
+            PaidAt = DateTime.UtcNow;
+        }
     }
 }

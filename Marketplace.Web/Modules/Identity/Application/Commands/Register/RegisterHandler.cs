@@ -34,7 +34,6 @@ namespace Marketplace.Web.Modules.Identity.Application.Commands.Register
             if (!result.Succeeded)
                 throw new ArgumentException(string.Join(", ", result.Errors.Select(e => e.Description)));
 
-            // Назначаем роль (используем enum)
             await _userManager.AddToRoleAsync(user, command.Role.ToString());
 
             return new AuthResponse(

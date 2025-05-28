@@ -1,6 +1,5 @@
 ﻿using Marketplace.Web.Modules.Categories.Application.Interfaces;
 using Marketplace.Web.Modules.Categories.Domain.Entities;
-using Marketplace.Web.Modules.Categories.Domain.Enums;
 
 namespace Marketplace.Web.Modules.Categories.Infrastructure
 {
@@ -20,9 +19,6 @@ namespace Marketplace.Web.Modules.Categories.Infrastructure
             {
                 Name = name,
                 CreatorSellerId = creatorSellerId,
-                Status = creatorSellerId.HasValue
-                    ? CategoryStatusEnum.Pending
-                    : CategoryStatusEnum.Active
             };
 
             await _repository.AddAsync(category);
