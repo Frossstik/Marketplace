@@ -63,7 +63,7 @@ namespace Marketplace.Web.Infrastructure.RabbitMQ.Consumers
                 }
                 catch (Exception ex)
                 {
-                    // TODO: потом добавить логи
+                    throw new Exception("Error processing PaymentCompletedEvent", ex);
                 }
             };
 

@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Marketplace.Payment")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b1b5770a6686d2e1ddc9b6fbc934bb1c53c5d341")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d0536f9db520adfbf5a0c92c55f0b6b1c3f5096e")]
 [assembly: System.Reflection.AssemblyProductAttribute("Marketplace.Payment")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Marketplace.Payment")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
