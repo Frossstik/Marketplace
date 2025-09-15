@@ -5,10 +5,11 @@ name: Backend CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "master" ]
     paths:
       - 'Marketplace.Web/**'
   pull_request:
+    branches: [ "master" ]
     paths:
       - 'Marketplace.Web/**'
 
