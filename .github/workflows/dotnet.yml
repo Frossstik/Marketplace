@@ -1,28 +1,36 @@
 # This workflow will build a .NET project
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
 
-name: .NET
+name: Frontend CI
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "main" ]
+    paths:
+      - 'marketplace-frontend/**'
   pull_request:
-    branches: [ "master" ]
+    paths:
+      - 'marketplace-frontend/**'
 
 jobs:
-  build:
-
+  frontend:
     runs-on: ubuntu-latest
-
+    defaults:
+      run:
+        working-directory: marketplace-frontend
     steps:
-    - uses: actions/checkout@v4
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 8.0.x
-    - name: Restore dependencies
-      run: dotnet restore
-    - name: Build
-      run: dotnet build --no-restore
-    - name: Test
-      run: dotnet test --no-build --verbosity normal
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test -- --watchAll=false
+
+      - name: Build
+        run: npm run build
