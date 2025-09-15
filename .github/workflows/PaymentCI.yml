@@ -5,10 +5,11 @@ name: Payment CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "master" ]
     paths:
       - 'Marketplace.Payment/**'
   pull_request:
+    branches: [ "master" ]
     paths:
       - 'Marketplace.Payment/**'
 
