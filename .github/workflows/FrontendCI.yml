@@ -9,6 +9,7 @@ on:
     paths:
       - 'marketplace-frontend/**'
   pull_request:
+    branches: [ "master" ]
     paths:
       - 'marketplace-frontend/**'
 
