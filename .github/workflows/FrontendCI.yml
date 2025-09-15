@@ -5,7 +5,7 @@ name: Frontend CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "master" ]
     paths:
       - 'marketplace-frontend/**'
   pull_request:
